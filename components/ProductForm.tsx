@@ -4,7 +4,37 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product, ProductFormData } from '@/types';
 import { createProduct, updateProduct } from '@/lib/api/products';
-import { setOverride, resetProduct } from '@/lib/productOverrides';
+import { setOverride, resetProduct, addLocalProduct } from '@/lib/productOverrides';
+
+// ─── FormField ────────────────────────────────────────────────────────────────
+// IMPORTANT: Must be defined OUTSIDE ProductForm.
+// If defined inside, React treats it as a new component type on every render,
+// causing inputs to unmount/remount and lose focus on every keystroke.
+function FormField({
+  id,
+  label,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="label">
+        {label}
+      </label>
+      {children}
+      {error && (
+        <p className="mt-1 text-xs text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 interface ProductFormProps {
   /** If provided, form is in edit mode. Otherwise create mode. */
@@ -100,6 +130,15 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
       } else {
         // NOTE: DummyJSON does not persist this — local state only
         result = await createProduct(form);
+        // ✅ Save to localStorage so the new product appears in the list after redirect
+        result = addLocalProduct({
+          title: String(form.title),
+          description: String(form.description),
+          price: Number(form.price),
+          stock: Number(form.stock),
+          category: String(form.category),
+          thumbnail: String(form.thumbnail),
+        });
       }
       onSuccess?.(result);
       router.push('/products');
@@ -113,31 +152,6 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
     }
   }
 
-  function FormField({
-    id,
-    label,
-    error,
-    children,
-  }: {
-    id: string;
-    label: string;
-    error?: string;
-    children: React.ReactNode;
-  }) {
-    return (
-      <div>
-        <label htmlFor={id} className="label">
-          {label}
-        </label>
-        {children}
-        {error && (
-          <p className="mt-1 text-xs text-red-600" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5 max-w-2xl">

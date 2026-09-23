@@ -119,3 +119,59 @@ export function resetProduct(id: number): void {
   clearOverride(id);
   removeDeletedId(id);
 }
+
+// ─── Locally created products store ──────────────────────────────────────────
+// DummyJSON does not persist new products at all (always returns id:194).
+// We assign negative local IDs to avoid clashing with real DummyJSON IDs.
+
+const LOCAL_PRODUCTS_KEY = 'pa_local_products';
+
+/** Returns all locally created products (those not yet on the real API). */
+export function getLocalProducts(): Product[] {
+  return readJSON<Product[]>(LOCAL_PRODUCTS_KEY, []);
+}
+
+/**
+ * Saves a newly created product locally.
+ * Assigns a negative timestamp-based ID to avoid clashing with real IDs.
+ */
+export function addLocalProduct(data: Partial<Product>): Product {
+  const existing = getLocalProducts();
+  // Use negative timestamp as a unique local ID
+  const localId = -(Date.now());
+  const product: Product = {
+    title: '',
+    description: '',
+    category: '',
+    price: 0,
+    discountPercentage: 0,
+    rating: 0,
+    stock: 0,
+    tags: [],
+    sku: `LOCAL-${Math.abs(localId).toString(36).toUpperCase()}`,
+    weight: 0,
+    warrantyInformation: 'N/A',
+    shippingInformation: 'N/A',
+    availabilityStatus: 'In Stock',
+    reviews: [],
+    returnPolicy: 'N/A',
+    minimumOrderQuantity: 1,
+    images: [],
+    thumbnail: '',
+    ...data,
+    id: localId, // ensure our local ID wins
+  };
+  writeJSON(LOCAL_PRODUCTS_KEY, [product, ...existing]);
+  return product;
+}
+
+/** Removes a locally created product by its (negative) ID. */
+export function removeLocalProduct(id: number): void {
+  const existing = getLocalProducts();
+  writeJSON(LOCAL_PRODUCTS_KEY, existing.filter((p) => p.id !== id));
+}
+
+/** Returns true if the id is a locally created product (negative). */
+export function isLocalProduct(id: number): boolean {
+  return id < 0;
+}

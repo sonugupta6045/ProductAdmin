@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchProducts } from '@/lib/api/products';
 import { Product, ProductsResponse, SortField, SortOrder } from '@/types';
-import { addDeletedId, getDeletedIds, mergeWithOverride } from '@/lib/productOverrides';
+import { addDeletedId, getDeletedIds, getLocalProducts, mergeWithOverride } from '@/lib/productOverrides';
 
 // ─── URL param sanitisation helpers ──────────────────────────────────────────
 
@@ -99,10 +99,35 @@ export function useProducts(): UseProductsReturn {
       );
       // Apply local overrides and filter out locally-deleted products
       const deletedIds = getDeletedIds();
-      const mergedProducts = result.products
+      let mergedProducts = result.products
         .filter((p) => !deletedIds.includes(p.id))
         .map(mergeWithOverride);
-      setData({ ...result, products: mergedProducts, total: result.total - deletedIds.filter(id => result.products.some(p => p.id === id)).length });
+
+      // Prepend any locally created products (only on page 1 for simplicity)
+      let matchedLocalCount = 0;
+      if (page === 1) {
+        let localProducts = getLocalProducts();
+        // Filter local products by search query
+        if (q) {
+          const lowerQ = q.toLowerCase();
+          localProducts = localProducts.filter(p => 
+            p.title.toLowerCase().includes(lowerQ) || 
+            p.description.toLowerCase().includes(lowerQ)
+          );
+        }
+        // Filter local products by category
+        if (category) {
+          localProducts = localProducts.filter(p => p.category === category);
+        }
+        matchedLocalCount = localProducts.length;
+        mergedProducts = [...localProducts, ...mergedProducts];
+      }
+
+      setData({ 
+        ...result, 
+        products: mergedProducts, 
+        total: result.total - deletedIds.filter(id => result.products.some(p => p.id === id)).length + matchedLocalCount 
+      });
     } catch (err) {
       // Ignore abort errors (stale requests)
       if (err instanceof Error && err.name === 'CanceledError') return;
