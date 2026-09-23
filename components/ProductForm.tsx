@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Product, ProductFormData } from '@/types';
 import { createProduct, updateProduct } from '@/lib/api/products';
+import { setOverride, resetProduct } from '@/lib/productOverrides';
 
 interface ProductFormProps {
   /** If provided, form is in edit mode. Otherwise create mode. */
@@ -87,6 +88,15 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
         result = await updateProduct(product.id, form);
         // The API echoes back the product — merge with original for full shape
         result = { ...product, ...result };
+        // ✅ Persist the diff to localStorage so edits survive page refresh
+        setOverride(product.id, {
+          title: String(form.title),
+          description: String(form.description),
+          price: Number(form.price),
+          stock: Number(form.stock),
+          category: String(form.category),
+          thumbnail: String(form.thumbnail),
+        });
       } else {
         // NOTE: DummyJSON does not persist this — local state only
         result = await createProduct(form);
@@ -185,7 +195,7 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
         )}
       </FormField>
 
-      <div className="flex gap-3 pt-2">
+      <div className="flex flex-wrap gap-3 pt-2">
         <button
           id="product-form-submit"
           type="submit"
@@ -213,6 +223,22 @@ export default function ProductForm({ product, onSuccess }: ProductFormProps) {
         >
           Cancel
         </button>
+        {/* Reset to original — only shown in edit mode when overrides exist */}
+        {isEdit && (
+          <button
+            type="button"
+            id="product-form-reset"
+            onClick={() => {
+              if (confirm('Reset to original DummyJSON data? All your local edits for this product will be lost.')) {
+                resetProduct(product.id);
+                router.refresh();
+              }
+            }}
+            className="btn-ghost text-sm text-red-500 hover:text-red-700 hover:bg-red-50 ml-auto"
+          >
+            ↺ Reset to original
+          </button>
+        )}
       </div>
     </form>
   );

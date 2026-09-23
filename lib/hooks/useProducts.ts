@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { fetchProducts } from '@/lib/api/products';
 import { Product, ProductsResponse, SortField, SortOrder } from '@/types';
+import { addDeletedId, getDeletedIds, mergeWithOverride } from '@/lib/productOverrides';
 
 // ─── URL param sanitisation helpers ──────────────────────────────────────────
 
@@ -96,7 +97,12 @@ export function useProducts(): UseProductsReturn {
         },
         controller.signal
       );
-      setData(result);
+      // Apply local overrides and filter out locally-deleted products
+      const deletedIds = getDeletedIds();
+      const mergedProducts = result.products
+        .filter((p) => !deletedIds.includes(p.id))
+        .map(mergeWithOverride);
+      setData({ ...result, products: mergedProducts, total: result.total - deletedIds.filter(id => result.products.some(p => p.id === id)).length });
     } catch (err) {
       // Ignore abort errors (stale requests)
       if (err instanceof Error && err.name === 'CanceledError') return;
@@ -158,7 +164,9 @@ export function useProducts(): UseProductsReturn {
         : prev
     );
 
-  const removeProduct = (id: number) =>
+  const removeProduct = (id: number) => {
+    // Persist the deletion to localStorage so it survives page refresh
+    addDeletedId(id);
     setData((prev) =>
       prev
         ? {
@@ -168,6 +176,7 @@ export function useProducts(): UseProductsReturn {
           }
         : prev
     );
+  };
 
   return {
     products: data?.products ?? [],

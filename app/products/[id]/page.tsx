@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { fetchProduct } from '@/lib/api/products';
 import { Product } from '@/types';
 import AsyncState from '@/components/AsyncState';
+import { isDeleted, mergeWithOverride } from '@/lib/productOverrides';
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -59,7 +60,12 @@ export default function ProductDetailPage() {
 
     fetchProduct(id, controller.signal)
       .then((p) => {
-        setProduct(p);
+        // If this product was locally deleted, show as not-found
+        if (isDeleted(p.id)) {
+          setNotFound(true);
+        } else {
+          setProduct(mergeWithOverride(p));
+        }
         setLoading(false);
       })
       .catch((err) => {
