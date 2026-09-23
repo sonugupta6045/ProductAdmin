@@ -74,16 +74,20 @@ function ProductsContent() {
 
       {/* Search + Filter/Sort bar */}
       <div className="card mb-5">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <SearchBar value={q} onChange={setQ} />
-          <FilterSortBar
-            category={category}
-            onCategoryChange={setCategory}
-            sortBy={sortBy}
-            order={order}
-            onSortChange={setSort}
-            searchActive={!!q}
-          />
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="w-full lg:max-w-xs flex-shrink-0">
+            <SearchBar value={q} onChange={setQ} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <FilterSortBar
+              category={category}
+              onCategoryChange={setCategory}
+              sortBy={sortBy}
+              order={order}
+              onSortChange={setSort}
+              searchActive={!!q}
+            />
+          </div>
         </div>
       </div>
 
