@@ -13,6 +13,16 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    label: 'Dashboard',
+    href: '/dashboard',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    ),
+  },
+  {
     label: 'Products',
     href: '/products',
     icon: (
@@ -66,7 +76,9 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 space-y-1">
         {navItems.map((item) => {
           const active =
-            item.href === '/products'
+            item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : item.href === '/products'
               ? pathname === '/products'
               : pathname.startsWith(item.href);
           return (
